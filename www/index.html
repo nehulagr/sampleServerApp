@@ -1,0 +1,113 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta name="viewport" content="width=320; user-scalable=no" />
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Minimal AppLaud App test</title>
+
+    <script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js"></script>
+	  <script type="text/javascript" charset="utf-8" src="cordova-1.9.0.js"></script>
+	  <script type="text/javascript" charset="utf-8">
+      
+        var db;
+        var shortName = 'sqlTestDB';
+        var version = '1.0';
+        var displayName = 'sqlTestDB';
+        var maxSize = 65535;
+
+
+        function init() {
+            document.addEventListener("deviceready", onDeviceReady, true);
+        }
+
+       function onDeviceReady() {
+
+                alert("App is ready");
+              db = openDatabase(shortName, version, displayName,maxSize); 
+
+              db.transaction(function(tx){ 
+              tx.executeSql( 'DROP TABLE post_details',nullHandler,nullHandler);    
+              tx.executeSql('CREATE TABLE IF NOT EXISTS post_details(UserId INTEGER NOT NULL PRIMARY KEY, post_title TEXT NOT NULL, post_date TEXT NOT NULL,post_comment TEXT NOT NULL,post_content TEXT NOT NULL, post_categories TEXT NOT NULL, post_image TEXT)',[],nullHandler,errorHandler);
+                },errorHandler,successCallBack);
+
+
+                      
+               $.ajax({
+                  url: 'http://www.foduu.com/api/get_recent_posts/?callback=?',
+                  type: 'GET',
+                  dataType: 'json',
+                  success: function(data){
+                      document.getElementById('content').innerHTML = "Post Title:" + data.posts[0].title;
+
+                      var number_of_post = Object.keys(data.posts).length;
+                      for(var i=0; i < number_of_post; i++){
+
+                                var datas = data.posts[i];
+                                console.log(datas);
+                                    var ptitle = data.posts[i].title;
+                                    var pdate = data.posts[i].date;
+                                    var pccount = data.posts[i].comment_count;
+                                    var pcontent = data.posts[i].content;
+                                    var pcategories = data.posts[i].categories;
+                                    var pimage = "my image";
+                                    //alert(ptitle +","+ pdate +","+ pccount+","+ pcategories +","+ pimage);
+                                      db.transaction(function(transaction) {
+                                      transaction.executeSql('INSERT INTO post_details(post_title,post_date,post_comment,post_content,post_categories,post_image) VALUES (?,?,?,?,?,?)',[datas['title'],pdate,pccount,"pcontent",pcategories,pimage],nullHandler,errorHandler);
+                                        }); 
+
+                      }
+                      alert("success fully data saved to db");
+                  },
+                  error: function(data){
+                      alert("Error on data load");
+                  }
+                });
+        };
+
+
+        function errorHandler(transaction, error) {
+           alert('Error: ' + error.message + ' code: ' + error.code);
+
+        }
+
+        function successCallBack() {
+           alert("DEBUGGING: success");
+        }
+
+        function nullHandler(){}; 
+      
+       function showData(){
+                  
+                  db = openDatabase(shortName, version, displayName,maxSize); 
+                  db.transaction(function(transaction) {
+                        transaction.executeSql('SELECT * FROM post_details;', [],
+                          function(transaction, result) {
+                            $.each(result.rows,function(index){
+                                var row = result.rows.item(index);
+                                
+                                
+                                var post_single="<li>" +row['post_title']+ "</li>";
+                                   $('#posttitles').append(post_single);
+                                   $('#posts-all').trigger('create');
+                                
+                                
+                            });
+                            
+                        });
+          },errorHandler,nullHandler);  
+
+        }
+
+</script>  
+
+  </head>
+  <body onload="init();" id="stage" class="theme">
+    <h2>Minimal AppLaud App</h2>
+
+	<p id="content">Your app goes here.</p>
+  <input type="button" value="Get Data" onclick="showData()">
+	<ul id="posttitles"></ul>
+
+  </body>
+</html>
